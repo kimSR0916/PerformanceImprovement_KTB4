@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>결과기 1번 셀 해설 — 카카오 약관 RAG 파이프라인</title>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --panel: #ffffff;
+    --ink: #26241f;
+    --ink-soft: #5c584e;
+    --accent: #a6521f;
+    --accent-soft: #f2e2d3;
+    --line: #e6e0d4;
+    --code-bg: #2b2620;
+    --code-ink: #f1ead9;
+    --good: #2f6e3f;
+    --good-bg: #e5f2e6;
+    --bad: #a13030;
+    --bad-bg: #fbe7e5;
+    --radius: 10px;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Nanum Myeongjo", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "D2Coding", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.7;
+    font-size: 17px;
+  }
+  .layout {
+    display: flex;
+    max-width: 1180px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+  nav.toc {
+    position: sticky;
+    top: 0;
+    width: 250px;
+    flex-shrink: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 32px 18px;
+    border-right: 1px solid var(--line);
+    font-family: var(--sans);
+    font-size: 14px;
+  }
+  nav.toc h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  nav.toc a {
+    display: block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    margin-bottom: 2px;
+  }
+  nav.toc a:hover { background: var(--accent-soft); color: var(--accent); }
+  nav.toc a.sub { padding-left: 22px; font-size: 13px; }
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 48px 56px 120px;
+  }
+  header.hero {
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+    border-bottom: 2px solid var(--ink);
+  }
+  header.hero .eyebrow {
+    font-family: var(--sans);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  header.hero h1 {
+    font-size: 2.4rem;
+    margin: 10px 0 14px;
+    line-height: 1.25;
+  }
+  header.hero p.lede {
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    max-width: 62ch;
+  }
+  section { margin-bottom: 64px; }
+  section h2 {
+    font-size: 1.7rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+    margin-bottom: 22px;
+  }
+  section h3 {
+    font-size: 1.25rem;
+    margin-top: 34px;
+    color: var(--ink);
+  }
+  section h4 {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    margin-top: 26px;
+    margin-bottom: 10px;
+  }
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); }
+  .callout {
+    font-family: var(--sans);
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 22px 0;
+    font-size: 0.95rem;
+  }
+  .callout .label {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .skip-note {
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    background: var(--panel);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  code {
+    font-family: var(--mono);
+    background: var(--accent-soft);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  pre code { background: none; padding: 0; }
+  .code-caption {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-top: -10px;
+    margin-bottom: 18px;
+  }
+  /* Diagram framework */
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 28px 24px;
+    margin: 24px 0;
+    font-family: var(--sans);
+  }
+  .diagram-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .flow-row {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .flow-box {
+    background: var(--bg);
+    border: 1.5px solid var(--ink);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-width: 120px;
+    max-width: 170px;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+  .flow-box.accent { border-color: var(--accent); background: var(--accent-soft); }
+  .flow-box .box-title { font-weight: 700; margin-bottom: 4px; }
+  .flow-box .box-sub { color: var(--ink-soft); font-size: 0.78rem; }
+  .flow-arrow {
+    align-self: center;
+    color: var(--ink-soft);
+    font-size: 1.3rem;
+    padding: 0 2px;
+  }
+  .flow-arrow.down { transform: rotate(90deg); margin: 4px auto; }
+  .flow-col { display: flex; flex-direction: column; align-items: center; }
+  .example-data {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: #fff;
+    border-radius: 4px;
+    padding: 3px 6px;
+    display: inline-block;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .card.bad { border-color: #e3b6b0; background: #fdf4f2; }
+  .card.good { border-color: #b7d4b8; background: #f2f8f2; }
+  .card h5 {
+    font-family: var(--sans);
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .card.bad h5 { color: var(--bad); }
+  .card.good h5 { color: var(--good); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    margin: 18px 0;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  th {
+    background: var(--accent-soft);
+    font-weight: 600;
+  }
+  ul, ol { padding-left: 22px; margin: 0 0 16px; }
+  li { margin-bottom: 6px; }
+  .badge {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--ink);
+    color: #fff;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  /* Quiz */
+  .quiz-block {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 24px 26px;
+    margin-bottom: 26px;
+  }
+  .quiz-q {
+    font-family: var(--sans);
+    font-weight: 600;
+    margin-bottom: 14px;
+    font-size: 1rem;
+  }
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .quiz-opt {
+    font-family: var(--sans);
+    text-align: left;
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    padding: 11px 14px;
+    cursor: pointer;
+    font-size: 0.92rem;
+    color: var(--ink);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .quiz-opt:hover { border-color: var(--accent); }
+  .quiz-opt.correct { border-color: var(--good); background: var(--good-bg); }
+  .quiz-opt.incorrect { border-color: var(--bad); background: var(--bad-bg); }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-feedback {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--good-bg); color: var(--good); }
+  .quiz-feedback.incorrect { background: var(--bad-bg); color: var(--bad); }
+  footer {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 40px 20px;
+  }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    nav.toc {
+      position: relative;
+      width: 100%;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+    main { padding: 32px 20px 80px; }
+    header.hero h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <h2>목차</h2>
+    <a href="#background">1. 배경</a>
+    <a class="sub" href="#bg-deep">RAG란 무엇인가</a>
+    <a class="sub" href="#bg-narrow">이 과제의 계약 조건</a>
+    <a href="#intuition">2. 핵심 아이디어</a>
+    <a class="sub" href="#int-example">토이 예제로 보기</a>
+    <a href="#code">3. 코드 해설</a>
+    <a class="sub" href="#code-fetch">① 원문 수집·파싱</a>
+    <a class="sub" href="#code-dense">② 밀집 검색 (KURE+FAISS)</a>
+    <a class="sub" href="#code-sparse">③ 희소 검색 (BM25)</a>
+    <a class="sub" href="#code-hybrid">④ 하이브리드 재순위화</a>
+    <a class="sub" href="#code-gen">⑤ Qwen2.5 4bit 생성</a>
+    <a class="sub" href="#code-entry">⑥ answer_question 진입점</a>
+    <a href="#quiz">4. 이해도 확인 퀴즈</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <span class="eyebrow">Code Walkthrough</span>
+      <h1>카카오 약관 결과기 — RAG 파이프라인 해설</h1>
+      <p class="lede">
+        <code>kakao_terms_rag_cell1.py</code> 한 파일이 어떻게 "카카오계정을 탈퇴하려면
+        어떻게 하나요?" 같은 질문을 받아, 수백 개 조항 중 진짜 관련 있는 몇 개만 찾아내고,
+        그것만 근거로 Qwen2.5-7B가 답을 쓰게 만드는지 처음부터 끝까지 따라가 봅니다.
+      </p>
+    </header>
+
+    <!-- ============================================================ -->
+    <section id="background">
+      <h2>1. 배경</h2>
+
+      <h3 id="bg-deep">RAG란 무엇인가 — 초심자를 위한 깊은 배경</h3>
+      <p class="skip-note">이미 RAG, 임베딩, 벡터 검색에 익숙하다면 이 단락은 건너뛰고
+        <a href="#bg-narrow">이 과제의 계약 조건</a>으로 바로 가도 좋습니다.</p>
+
+      <p>
+        거대 언어모델(LLM)에게 "카카오계정을 탈퇴하는 방법은?"이라고 물으면, 모델은
+        학습 당시 봤던 데이터를 바탕으로 그럴듯한 답을 <em>지어낼</em> 수 있습니다.
+        문제는 실제 약관 조항의 정확한 문구나 최신 개정 내용은 모델이 몰랐거나
+        틀리게 기억하고 있을 수 있다는 점입니다. 이걸 흔히 "환각(hallucination)"이라 부릅니다.
+      </p>
+      <p>
+        가장 단순한 해결책은 "약관 전체를 프롬프트에 다 넣고 그 안에서 찾아서 답해"라고
+        시키는 것입니다. 실제로 작은 문서라면 이 방법도 통합니다. 하지만 카카오의 약관
+        네 종류를 합치면 수백 개의 조항, 수만 자에 달하고, 질문마다 이걸 전부 모델에
+        입력하면 (1) 매번 계산량이 커져 느려지고, (2) 모델이 정작 중요한 조항을
+        수많은 무관한 텍스트 속에서 놓치기 쉬워지고, (3) 이번 과제에서는 애초에
+        금지된 방식이기도 합니다.
+      </p>
+      <p>
+        <strong>RAG(Retrieval-Augmented Generation, 검색 증강 생성)</strong>는 이 문제를
+        "먼저 찾고, 찾은 것만 갖고 답하게 하자"는 방식으로 풉니다. 질문이 들어오면:
+      </p>
+      <ol>
+        <li>전체 문서를 작은 조각(청크)으로 미리 나눠 둔다 — 여기서는 "조(條)" 단위.</li>
+        <li>질문과 각 조각의 <strong>관련도</strong>를 계산해 상위 몇 개만 골라낸다 (검색, retrieval).</li>
+        <li>고른 조각만 프롬프트에 넣고 LLM에게 "이 안에서만 답을 찾아라"라고 지시한다 (생성, generation).</li>
+      </ol>
+      <p>
+        관련도를 계산하는 대표적인 두 가지 방법이 있습니다.
+      </p>
+      <div class="two-col">
+        <div class="card">
+          <h5>밀집 검색 (Dense / 임베딩)</h5>
+          <p style="margin:0">문장을 숫자 벡터로 바꾸는 "임베딩 모델"을 씁니다.
+          의미가 비슷한 문장은 벡터 공간에서 가까이 놓입니다. "탈퇴"와 "해지"처럼
+          단어는 달라도 뜻이 비슷하면 잡아낼 수 있습니다.</p>
+        </div>
+        <div class="card">
+          <h5>희소 검색 (Sparse / 키워드, BM25)</h5>
+          <p style="margin:0">전통적인 키워드 매칭 방식입니다. 질문에 등장한 단어가
+          문서에도 등장하는지, 얼마나 자주·희귀하게 등장하는지를 점수화합니다.
+          법률 문서의 고유명사·조항 번호처럼 "정확히 그 단어"가 중요할 때 강합니다.</p>
+        </div>
+      </div>
+      <p>
+        이 결과기는 두 방식을 <strong>하이브리드</strong>로 섞어 씁니다. 자세한 계산은
+        아래 코드 해설에서 다룹니다.
+      </p>
+      <p>
+        마지막 조각은 LLM 자체를 GPU에 어떻게 올리느냐입니다. Colab의 무료 T4 GPU는
+        메모리가 16GB뿐이라, 70억(7B) 개 파라미터를 가진 Qwen2.5-7B-Instruct를
+        원래 정밀도(16비트)로 올리면 약 14GB를 혼자 다 써버려 임베딩 모델이나
+        검색 인덱스가 들어갈 자리가 없습니다. <strong>4비트 양자화</strong>는 각
+        파라미터를 저장하는 비트 수를 16비트에서 4비트로 줄여, 모델 크기를 대략
+        4분의 1(약 4~5GB)로 압축합니다. 정확도는 약간 손해 보지만 T4 한 장에
+        전체 파이프라인을 올릴 수 있게 해줍니다.
+      </p>
+
+      <h3 id="bg-narrow">이 과제의 계약 조건 — 좁혀서 본 배경</h3>
+      <p>
+        운영진이 배포한 노트북은 두 개의 셀로 나뉩니다. <strong>1번 셀</strong>은
+        팀이 자유롭게 구현하는 결과기 본체이고, <strong>2번 셀</strong>은 채점을 위해
+        고정된 "공통 러너"입니다. 이번에 작성한 <code>kakao_terms_rag_cell1.py</code>는
+        1번 셀 전체(자유 구현 영역 + 고정 FastAPI 연결 영역)를 담고 있습니다.
+      </p>
+      <p>1번 셀이 반드시 지켜야 하는 계약은 다음과 같습니다.</p>
+      <table>
+        <tr><th>항목</th><th>요구 사항</th></tr>
+        <tr><td>진입점</td><td><code>answer_question(question: str)</code> 함수 이름과 시그니처 고정</td></tr>
+        <tr><td>반환값</td><td><code>{"answer": str, "retrieved": [[문서명, 조번호], ...]}</code>, 근거 1~4개</td></tr>
+        <tr><td>서버</td><td>전역 <code>app</code> (FastAPI), <code>GET /health</code>, <code>POST /answer</code></td></tr>
+        <tr><td>생성 모델 계열</td><td>Qwen2.5-Instruct 계열 (크기·양자화는 자유 — 이번엔 7B + 4bit)</td></tr>
+        <tr><td>실행 환경</td><td>새 Colab T4에서 준비 작업 없이 위에서 아래로 한 번에 실행</td></tr>
+      </table>
+      <p>그리고 명시적으로 금지된 방식들이 있습니다.</p>
+      <ul>
+        <li>Google Drive 마운트, 사전 업로드 파일, 개인 컴퓨터 경로 의존 — 그래서 약관 원문을
+          <a href="#code-fetch">매 실행마다 카카오 공식 페이지에서 실시간으로 가져옵니다</a>.</li>
+        <li>외부 생성형 LLM API, 원격 임베딩·리랭커, 원격 관리형 검색 서비스 — 그래서 임베딩(KURE),
+          생성(Qwen), 검색 인덱스(FAISS/BM25) 모두 <strong>로컬 GPU/CPU에서</strong> 돕니다.</li>
+        <li>사람의 업로드·입력·클릭을 기다리는 코드 — 전 과정이 자동 실행됩니다.</li>
+        <li>질문과 무관하게 약관 전체를 매번 프롬프트에 넣는 방식 — 그래서 하이브리드 검색으로
+          추린 1~4개 조항만 프롬프트에 들어갑니다.</li>
+      </ul>
+      <div class="callout">
+        <span class="label">문서명 고정 규칙</span>
+        채점기는 <code>retrieved</code>에 담긴 문서명이 정확히 네 가지 공식 이름
+        (카카오계정 약관 / 카카오 위치정보 이용약관 / 카카오 통합서비스약관 / 카카오 통합 약관)
+        중 하나와 일치하는지 확인합니다. 그래서 코드는 스크래핑한 문서를 항상 이 네 이름
+        중 하나에 매핑해서 저장합니다.
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="intuition">
+      <h2>2. 핵심 아이디어</h2>
+      <p>
+        전체 시스템은 두 단계로 나뉩니다. <strong>색인 시점(Colab 셀 실행 시 한 번)</strong>에
+        약관을 조 단위로 쪼개 검색 가능하게 만들어 두고, <strong>질의 시점(질문이 올 때마다)</strong>에
+        그 색인에서 관련 조항을 찾아 답을 생성합니다.
+      </p>
+
+      <h4>색인 시점 — 한 번만 실행</h4>
+      <div class="diagram">
+        <div class="diagram-title">약관 원문 → 검색 가능한 인덱스</div>
+        <div class="flow-row">
+          <div class="flow-box accent">
+            <div class="box-title">① 웹 수집</div>
+            <div class="box-sub">kakao.com/policy 페이지 4종을<br>requests로 다운로드</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">
+            <div class="box-title">② 조 단위 분리</div>
+            <div class="box-sub">정규식으로 "제N조" 경계 탐지</div>
+            <div class="example-data">제9조(계정 해지) 본문...</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">
+            <div class="box-title">③ 청크 리스트</div>
+            <div class="box-sub">{doc, article_no, text} 수백 개</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box accent">
+            <div class="box-title">④ 이중 인덱스</div>
+            <div class="box-sub">KURE 임베딩→FAISS<br>+ 토큰화→BM25</div>
+          </div>
+        </div>
+      </div>
+
+      <h4>질의 시점 — 질문마다 반복</h4>
+      <div class="diagram">
+        <div class="diagram-title">질문 → 답변 + 근거</div>
+        <div class="flow-row">
+          <div class="flow-box accent">
+            <div class="box-title">질문</div>
+            <div class="example-data">"탈퇴하려면?"</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">
+            <div class="box-title">하이브리드 검색</div>
+            <div class="box-sub">밀집 점수 0.65 +<br>희소 점수 0.35</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">
+            <div class="box-title">상위 1~4개 조항</div>
+            <div class="example-data">카카오계정 약관 제9조</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box accent">
+            <div class="box-title">Qwen2.5 (4bit)</div>
+            <div class="box-sub">근거 조항만 보고<br>답 생성</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">
+            <div class="box-title">최종 반환</div>
+            <div class="box-sub">answer + retrieved</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 id="int-example">토이 예제로 보기</h3>
+      <p>
+        질문 "카카오계정을 탈퇴하려면 어떻게 해야 하나요?"가 들어왔다고 해봅시다.
+        색인에는 이미 수백 개의 조 청크가 있고, 그중 세 개만 발췌해서 검색 과정을
+        단순화해 보겠습니다.
+      </p>
+      <table>
+        <tr><th>후보 조항</th><th>밀집 점수 (의미 유사도)</th><th>희소 점수 (키워드 일치)</th></tr>
+        <tr><td>카카오계정 약관 제9조 (이용계약 해지)</td><td>0.88</td><td>0.91 <span style="color:var(--ink-soft)">("탈퇴", "해지" 포함)</span></td></tr>
+        <tr><td>카카오계정 약관 제4조 (용어의 정의)</td><td>0.41</td><td>0.05</td></tr>
+        <tr><td>카카오 위치정보 이용약관 제3조 (동의 철회)</td><td>0.52</td><td>0.20 <span style="color:var(--ink-soft)">("철회"는 "탈퇴"와 다른 단어)</span></td></tr>
+      </table>
+      <p>
+        코드는 이 두 점수를 각각 0~1로 정규화한 뒤 <code>0.65 × 밀집 + 0.35 × 희소</code>로
+        합칩니다. 제9조는 두 점수 모두 높으니 압도적 1위로 뽑히고, 제3조는 의미상으로는
+        어느 정도 관련 있어 보이지만("철회"도 계약 종료와 관련) 정확한 키워드가
+        없어 순위가 낮아집니다 — 이게 바로 밀집 검색 단독으로는 놓칠 수 있는 오탐을
+        희소 검색이 걸러주는 지점입니다.
+      </p>
+      <p>
+        최종적으로 상위 조항(여기선 제9조 하나, 실제로는 최대 4개)만 아래처럼
+        프롬프트에 들어갑니다.
+      </p>
+      <div class="two-col">
+        <div class="card bad">
+          <h5>✗ 금지된 방식</h5>
+          <p style="margin:0">네 개 약관 전체(수만 자)를 매 질문마다 프롬프트에 그대로 붙여넣기</p>
+        </div>
+        <div class="card good">
+          <h5>✓ 이 코드의 방식</h5>
+          <p style="margin:0">검색으로 추린 조항 1~4개(수백 자)만 프롬프트에 넣기</p>
+        </div>
+      </div>
+      <p>
+        모델은 이 좁혀진 근거만 보고 "제9조에 따르면 계정 관리 &gt; 설정에서 탈퇴를
+        신청하면..." 같은 답을 쓰고, 코드는 그 답과 함께 실제로 사용한 근거
+        <code>[["카카오계정 약관", 9]]</code>를 함께 반환합니다.
+      </p>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="code">
+      <h2>3. 코드 해설</h2>
+      <p>
+        전체 흐름을 여섯 덩어리로 나눠 순서대로 봅니다. 패키지 설치 부분은
+        생략하고(단순 <code>pip install</code>) 로직이 있는 부분부터 시작합니다.
+      </p>
+
+      <h3 id="code-fetch">① 원문 수집·파싱</h3>
+      <p>
+        먼저 문서 이름마다 후보 URL 목록을 둡니다. 첫 URL이 실패하면 다음 걸
+        시도하는 폴백 구조입니다. "카카오 통합 약관"처럼 전용 페이지가 불확실한
+        경우, 통합서비스약관 페이지를 예비 소스로 재사용하도록 해뒀습니다.
+      </p>
+      <pre><code>TERMS_SOURCES = {
+    "카카오계정 약관": [
+        "https://www.kakao.com/policy/terms?type=a&lang=ko",
+    ],
+    "카카오 통합 약관": [
+        "https://www.kakao.com/policy/terms?type=t&lang=ko",
+        "https://www.kakao.com/policy/terms?type=ts&lang=ko",  # 폴백
+    ],
+    ...
+}</code></pre>
+      <p>
+        페이지를 받아오면 <code>BeautifulSoup</code>으로 스크립트·헤더·푸터 등
+        본문과 무관한 태그를 걷어내고, 순수 텍스트만 줄 단위로 남깁니다. 그 다음
+        정규식으로 "조" 경계를 찾습니다.
+      </p>
+      <pre><code>_ARTICLE_PATTERN = re.compile(r"^제\s*(\d+)\s*조\s*(?:\(([^)]{0,80})\))?", re.MULTILINE)</code></pre>
+      <div class="code-caption">핵심은 맨 앞의 <code>^</code>과 <code>re.MULTILINE</code> 조합입니다.</div>
+      <p>
+        약관 본문에는 "제9조에 따라 회사는..."처럼 <em>다른 조문 안에서</em> 조항
+        번호를 인용하는 문장이 흔합니다. 만약 <code>^</code> 없이 그냥
+        <code>제\d+조</code>로 찾으면 이런 인용문까지 전부 "새 조의 시작"으로
+        오인해 본문이 잘게 찢어집니다. 실제 조 제목은 항상 줄 맨 앞에서 시작한다는
+        점(<code>제 9 조 (이용계약 해지)</code>)을 이용해, "줄의 시작 지점에서만"
+        매칭하도록 anchor를 건 것입니다.
+      </p>
+      <p>
+        찾은 경계들 사이의 텍스트를 각각 하나의 조 청크로 자르고, 너무 긴 조는
+        <code>_subsplit_long_article</code>로 문단 단위 서브 청크로 다시 나눕니다
+        (조 번호는 그대로 유지되어, 나중에 검색 결과에서 원래 어느 조에 속했는지
+        알 수 있습니다).
+      </p>
+
+      <h3 id="code-dense">② 밀집 검색 — KURE 임베딩 + FAISS</h3>
+      <pre><code>_EMBED_MODEL = SentenceTransformer("nlpai-lab/KURE-v1", device=...)
+
+_CORPUS_EMB = _EMBED_MODEL.encode(
+    _CORPUS_TEXTS, normalize_embeddings=True, ...
+).astype("float32")
+
+_FAISS_INDEX = faiss.IndexFlatIP(_CORPUS_EMB.shape[1])
+_FAISS_INDEX.add(_CORPUS_EMB)</code></pre>
+      <p>
+        <strong>KURE-v1</strong>은 고려대에서 만든 한국어 검색 특화 임베딩
+        모델로, 문장을 1024차원 벡터로 바꿔줍니다. 여기서 눈여겨볼 디테일은
+        <code>normalize_embeddings=True</code>와 <code>IndexFlatIP</code>의 조합입니다.
+        벡터를 단위 길이(크기 1)로 정규화해두면, 두 벡터의 내적(inner product)이
+        곧 코사인 유사도와 같아집니다. 그래서 "거리"가 아니라 "내적이 큰 순"으로
+        찾는 <code>IndexFlatIP</code>를 쓰면 바로 의미적으로 가장 가까운 조항을
+        찾는 것과 같아집니다.
+      </p>
+
+      <h3 id="code-sparse">③ 희소 검색 — BM25</h3>
+      <pre><code>_TOKEN_PATTERN = re.compile(r"[가-힣]+|[a-zA-Z0-9]+")
+
+def _tokenize(text: str):
+    return _TOKEN_PATTERN.findall(text.lower())
+
+_BM25 = BM25Okapi([_tokenize(t) for t in _CORPUS_TEXTS])</code></pre>
+      <p>
+        형태소 분석기(예: KoNLPy) 없이, 한글 연속 구간과 영숫자 연속 구간을
+        단순히 토큰으로 뽑는 가벼운 정규식 토크나이저를 씁니다. 완벽한 형태소
+        분리는 아니지만, 별도 자바 의존성 없이 Colab에서 바로 돌아가고, BM25가
+        필요로 하는 "이 단어가 이 문서에 있는가" 판단에는 충분합니다.
+      </p>
+
+      <h3 id="code-hybrid">④ 하이브리드 재순위화</h3>
+      <p>
+        <code>_hybrid_search</code>가 실제 질의 시점 로직입니다. 밀집 검색 상위
+        20개와 희소 검색 상위 20개의 <em>합집합</em>을 후보로 모은 뒤, 두 점수를
+        각각 min-max 정규화(0~1 범위로)하고 가중합을 계산합니다.
+      </p>
+      <pre><code>combined = dense_weight * dense_vals + (1 - dense_weight) * bm25_vals  # dense_weight=0.65
+
+results, seen = [], set()
+for idx, score in ranked:
+    item = _RAW_CORPUS[idx]
+    key = (item["doc"], item["article_no"])
+    if key in seen:
+        continue
+    seen.add(key)
+    results.append({**item, "score": float(score)})
+    if len(results) >= top_k:
+        break</code></pre>
+      <p>
+        마지막 루프의 <code>seen</code> 집합이 하는 일이 중요합니다. 긴 조는
+        여러 서브 청크로 나뉘어 있으므로(②의 <code>_subsplit_long_article</code>),
+        같은 조에서 나온 두 서브 청크가 둘 다 상위권에 오를 수 있습니다. 이때
+        <code>(문서명, 조번호)</code>가 같으면 하나로 취급해 중복 없이 최대
+        4개의 <em>서로 다른 조</em>를 반환하도록 걸러냅니다 — 계약이 요구하는
+        "1~4개의 핵심 근거"를 지키는 지점입니다.
+      </p>
+
+      <h3 id="code-gen">⑤ Qwen2.5-7B-Instruct 4bit 생성</h3>
+      <pre><code>_bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True,
+)
+
+_GEN_MODEL = AutoModelForCausalLM.from_pretrained(
+    "Qwen/Qwen2.5-7B-Instruct",
+    quantization_config=_bnb_config,
+    device_map="auto",
+    torch_dtype=torch.float16,
+)</code></pre>
+      <p>
+        <code>nf4</code>(NormalFloat4)는 신경망 가중치의 실제 분포(정규분포에
+        가까움)에 맞춰 설계된 4비트 양자화 방식으로, 단순 균등 4비트보다 정보
+        손실이 적습니다. <code>bnb_4bit_use_double_quant</code>는 양자화에 쓰이는
+        스케일 값 자체도 한 번 더 압축해 메모리를 추가로 아낍니다.
+        <code>compute_dtype=torch.float16</code>은 실제 행렬 곱 연산은 16비트로
+        수행한다는 뜻인데, T4는 Ampere 이전 세대(Compute Capability 7.5)라
+        bfloat16을 지원하지 않기 때문에 float16을 택했습니다.
+      </p>
+      <p>
+        답변 생성부는 검색된 근거를 시스템 프롬프트의 규칙과 함께 채팅 템플릿에
+        넣고, <code>do_sample=False</code>(그리디 디코딩)으로 답을 생성합니다.
+        약관 QA처럼 "정답이 근거 문서 안에 있는" 과제에서는 창의성보다 일관성이
+        중요하므로 샘플링을 끄는 것이 합리적인 선택입니다.
+      </p>
+
+      <h3 id="code-entry">⑥ answer_question — 모든 것을 잇는 진입점</h3>
+      <pre><code>def answer_question(question: str):
+    if not isinstance(question, str) or not question.strip():
+        raise ValueError("question은 비어 있지 않은 문자열이어야 합니다.")
+
+    question = question.strip()
+    contexts = _hybrid_search(question, top_k=4)
+
+    if not contexts:
+        return {"answer": "약관에서 관련 근거를 찾을 수 없습니다.", "retrieved": []}
+
+    prompt = _build_prompt(question, contexts)
+    answer_text = _generate(prompt)
+    retrieved = [[c["doc"], c["article_no"]] for c in contexts]
+    return {"answer": answer_text, "retrieved": retrieved}</code></pre>
+      <p>
+        이 함수 자체는 짧습니다 — 앞서 만든 하이브리드 검색과 생성 함수를 순서대로
+        부를 뿐입니다. 흥미로운 점은 검색 결과가 하나도 없을 때(<code>contexts</code>가
+        빈 리스트)를 별도로 처리한다는 것입니다. 이 경우 굳이 LLM을 호출하지 않고
+        바로 "근거를 찾을 수 없습니다"를 반환해, 근거 없는 상태에서 모델이 답을
+        지어내는(환각) 상황 자체를 원천 차단합니다.
+      </p>
+      <p>
+        마지막으로 고정된 FastAPI 연결부(2번 셀이 호출하는 부분)는
+        <code>threading.Lock()</code>으로 <code>/answer</code> 요청을 감쌉니다.
+        GPU 위에 올라간 생성 모델은 한 번에 하나의 요청만 안전하게 처리할 수
+        있는데, FastAPI가 동시에 여러 요청을 받을 경우 이 락이 두 번째 요청을
+        첫 번째가 끝날 때까지 대기시켜 GPU 연산이 뒤섞이는 것을 막습니다.
+      </p>
+    </section>
+
+    <!-- ============================================================ -->
+    <section id="quiz">
+      <h2>4. 이해도 확인 퀴즈</h2>
+      <p>다섯 문제를 풀어보면서 방금 읽은 내용을 제대로 이해했는지 확인해보세요.</p>
+
+      <div class="quiz-block" data-answer="1">
+        <div class="quiz-q">Q1. 조 분리 정규식이 <code>제\d+조</code>가 아니라
+          <code>^제\s*(\d+)\s*조</code> + <code>re.MULTILINE</code>을 쓰는 이유는?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" data-correct="false">숫자 앞뒤 공백을 허용하기 위해서만이다</button>
+          <button class="quiz-opt" data-correct="true">본문 중간에서 다른 조를 인용하는 문장("제9조에 따라...")을 새 조의 시작으로 잘못 인식하지 않기 위해서다</button>
+          <button class="quiz-opt" data-correct="false">정규식 속도를 높이기 위해서다</button>
+          <button class="quiz-opt" data-correct="false">한글 유니코드 정규화 문제를 피하기 위해서다</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="1">
+        <div class="quiz-q">Q2. 임베딩을 <code>normalize_embeddings=True</code>로 정규화한 뒤
+          <code>faiss.IndexFlatIP</code>(내적 인덱스)를 쓰는 이유는?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" data-correct="false">IndexFlatIP가 IndexFlatL2보다 항상 메모리를 적게 쓰기 때문</button>
+          <button class="quiz-opt" data-correct="true">벡터를 단위 길이로 정규화하면 내적이 코사인 유사도와 같아지므로, 내적이 큰 순으로 찾는 것이 곧 의미적으로 가장 가까운 문서를 찾는 것이 되기 때문</button>
+          <button class="quiz-opt" data-correct="false">FAISS는 정규화된 벡터만 입력으로 받을 수 있기 때문</button>
+          <button class="quiz-opt" data-correct="false">양자화된 Qwen 모델과 벡터 형식을 맞추기 위해서</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="2">
+        <div class="quiz-q">Q3. 밀집 검색(KURE)만 쓰지 않고 BM25 희소 검색을 굳이 섞은
+          가장 큰 이유는?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" data-correct="false">BM25가 GPU 없이 더 빠르게 동작하기 때문에 속도상의 이유로만 섞었다</button>
+          <button class="quiz-opt" data-correct="false">KURE 모델이 한국어를 지원하지 않기 때문</button>
+          <button class="quiz-opt" data-correct="true">약관처럼 정확한 단어·조항 번호가 중요한 법률 텍스트에서, 의미는 비슷하지만 정확한 키워드가 다른 조문(예: "철회" vs "탈퇴")을 밀집 검색이 잘못 끌어올리는 것을 BM25의 키워드 일치 점수로 보완하기 위해서</button>
+          <button class="quiz-opt" data-correct="false">FAISS 인덱스 구축 실패에 대비한 폴백 용도로만 쓰였다</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="2">
+        <div class="quiz-q">Q4. Qwen2.5-7B-Instruct를 원래 16비트 그대로 쓰지 않고
+          4bit(NF4)로 양자화해서 로드하는 주된 이유는?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" data-correct="false">4bit 모델이 16bit보다 답변 품질이 더 좋기 때문</button>
+          <button class="quiz-opt" data-correct="true">Colab T4의 GPU 메모리(16GB)가 한정돼 있어, 7B 모델을 16bit로 올리면 약 14GB를 혼자 차지해 KURE 임베딩 모델·인덱스가 들어갈 여유가 없기 때문에, 4bit로 압축해 메모리를 크게 줄인다</button>
+          <button class="quiz-opt" data-correct="false">bitsandbytes 라이브러리가 16bit 로딩을 지원하지 않기 때문</button>
+          <button class="quiz-opt" data-correct="false">과제 규정이 반드시 4bit 양자화만 허용하기 때문</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-block" data-answer="1">
+        <div class="quiz-q">Q5. <code>_hybrid_search</code>의 결과 루프에서
+          <code>(item["doc"], item["article_no"])</code>를 <code>seen</code> 집합에 넣어
+          중복을 거르는 이유는?</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" data-correct="false">같은 문서가 여러 번 웹에서 다운로드되는 것을 막기 위해서</button>
+          <button class="quiz-opt" data-correct="true">긴 조는 여러 서브 청크로 쪼개져 있어 같은 조의 서로 다른 조각이 검색 결과 상위에 동시에 오를 수 있는데, 이를 하나의 근거로 합쳐서 계약이 요구하는 "1~4개의 서로 다른 근거 조항"을 지키기 위해서</button>
+          <button class="quiz-opt" data-correct="false">FAISS와 BM25가 같은 인덱스를 중복 검색하는 버그를 막기 위해서</button>
+          <button class="quiz-opt" data-correct="false">동일 조가 네 문서 모두에 등장할 경우를 대비해서</button>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </section>
+
+    <footer>
+      kakao_terms_rag_cell1.py 해설 · 자동 생성 문서
+    </footer>
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.quiz-block').forEach(block => {
+  const options = block.querySelectorAll('.quiz-opt');
+  const feedback = block.querySelector('.quiz-feedback');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      const isCorrect = opt.dataset.correct === 'true';
+      options.forEach(o => { o.disabled = true; });
+      if (isCorrect) {
+        opt.classList.add('correct');
+        feedback.textContent = '정답입니다! ' + opt.textContent;
+        feedback.className = 'quiz-feedback show correct';
+      } else {
+        opt.classList.add('incorrect');
+        const correctOpt = Array.from(options).find(o => o.dataset.correct === 'true');
+        correctOpt.classList.add('correct');
+        feedback.textContent = '오답입니다. 정답: ' + correctOpt.textContent;
+        feedback.className = 'quiz-feedback show incorrect';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>
